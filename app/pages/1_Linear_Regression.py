@@ -82,25 +82,33 @@ def check_and_transition_state():
         state = pd.read_sql("SELECT * FROM game_state WHERE id = 1", conn).iloc[0]
         now = time.time()
         
-        # If timer is running and time is up
-        if state['timer_ends_at'] > 0 and now >= state['timer_ends_at']:
-            if state['status'] == 'joining':
-                # NEW LOGIC: Check if anyone actually joined
-                player_count = conn.execute(text("SELECT COUNT(*) FROM players")).scalar()
-                if player_count == 0:
-                    # Abort and reset to setup
-                    conn.execute(text("UPDATE game_state SET status='setup', timer_ends_at=0 WHERE id=1"))
-                else:
-                    start_next_round(conn, state, 1)
+        # If timer is running and time is up (and not already being processed)
+        if state['timer_ends_at'] > 0 and now >= state['timer_ends_at'] and state['status'] != 'processing':
             
-            elif state['status'] == 'playing':
-                score_current_round(conn, state)
-                if state['current_round'] >= state['total_rounds']:
-                    conn.execute(text("UPDATE game_state SET status='finished', timer_ends_at=0 WHERE id=1"))
-                else:
-                    start_next_round(conn, state, int(state['current_round']) + 1)
-            conn.commit()
-            return True
+            # --- NEW: ATOMIC RACE CONDITION LOCK ---
+            # We attempt to lock the database by setting it to 'processing'.
+            # Only ONE device will successfully do this; the others will be rejected.
+            lock_query = text(f"UPDATE game_state SET status = 'processing' WHERE id = 1 AND status = '{state['status']}'")
+            result = conn.execute(lock_query)
+            
+            # If rowcount > 0, THIS specific device won the race and is allowed to do the math.
+            if result.rowcount > 0:
+                if state['status'] == 'joining':
+                    player_count = conn.execute(text("SELECT COUNT(*) FROM players")).scalar()
+                    if player_count == 0:
+                        conn.execute(text("UPDATE game_state SET status='setup', timer_ends_at=0 WHERE id=1"))
+                    else:
+                        start_next_round(conn, state, 1)
+                
+                elif state['status'] == 'playing':
+                    score_current_round(conn, state)
+                    if state['current_round'] >= state['total_rounds']:
+                        conn.execute(text("UPDATE game_state SET status='finished', timer_ends_at=0 WHERE id=1"))
+                    else:
+                        start_next_round(conn, state, int(state['current_round']) + 1)
+                
+                conn.commit()
+                return True
     return False
 
 def start_next_round(conn, state, round_num):
@@ -182,11 +190,24 @@ if not is_student_link:
     # ----------------------------------
     
     if state['status'] == 'setup' or state['status'] == 'finished':
-        st.header("⚙️ Game Setup")
+        st.header("⚙️ Game Setup & Concept Explanation")
+        
+        # --- NEW: SHOW PLOT IN SETUP PHASE ---
+        st.subheader("📊 How the Game Works")
+        st.markdown("""
+        **Teacher Script:** "Look at the blue dots. These are past students. The red line is our AI's 'Line of Best Fit'. 
+        When the game starts, the AI will pick a random Study Hour. Your goal is to guess exactly how many marks the red line predicts!"
+        """)
+        
+        # Draw the chart so the teacher can point to it
+        draw_ml_plot()
+        st.markdown("---")
+        # ---------------------------------------
+
         with st.form("setup_form"):
             col1, col2 = st.columns(2)
             with col1:
-                exp_students = st.number_input("Number of Players", 1, 50, 2)
+                exp_students = st.number_input("Number of Players", 1, 50, int(state.get('expected_students', 2)))
                 tot_rounds = st.number_input("Number of Rounds", 1, 20, 5)
                 join_wait = st.number_input("Waiting time to join (sec)", 10, 300, 40)
             with col2:
