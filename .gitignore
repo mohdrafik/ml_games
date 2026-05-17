@@ -1,0 +1,39 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Streamlit Local Secrets (Protects API keys if you add them later)
+.streamlit/secrets.toml
+
+# Machine Learning Data & Models (Prevents GitHub size limits)
+*.csv
+*.dat
+*.pkl
+*.h5
+*.joblib
+*.pt
+app/models/trained_models/*
+
+# (Optional) Keep the trained_models folder in Git, but ignore its contents
+!app/models/trained_models/.gitkeep
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# env file
+.env
