@@ -73,6 +73,53 @@ Main Entry        ■■■■ 1 File (6.25%)
 Total Monitored App Components: 16 Files (100%)
 
 ```
+## Later updated to modular form: From Monolithic to Modular Architecture as can see below: 
+8. Monolithic Architecture Refactoring
+
+**Problem:** All code (database logic, machine learning math, Streamlit UI, and game logic) was originally housed in a single, massive file (`linear_regression.py`). 
+
+**Cause:** As the application grew from a simple educational visualizer into a multiplayer game, a monolithic file became too difficult to maintain, read, and debug.
+
+```mermaid
+graph LR
+    A[Legacy: linear_regression.py] --> B[Database Logic]
+    A --> C[ML Models]
+    A --> D[Visualizer UI]
+    A --> E[Multiplayer Game UI]
+    
+    F[New: Modular App] --> G[utils/db.py]
+    F --> H[utils/ml_models.py]
+    F --> I[pages/1_Linear_Regression.py]
+    F --> J[pages/5_Game_Arena.py]
+    
+    style A fill:#f99,stroke:#333,stroke-width:2px
+    style F fill:#9f9,stroke:#333,stroke-width:2px
+```
+
+<details>
+<summary><b>Click to show new directory structure</b></summary>
+
+**Solution:** The codebase was refactored into a modular architecture. Core utilities like database connections and machine learning math were extracted into their own specialized files inside a `utils/` folder. The front-end views were split into separate Streamlit pages inside a `pages/` folder.
+
+**New Modular Structure:**
+
+```text
+streamlit_ml_demo/
+│
+├── .env
+├── app/
+│   ├── utils/
+│   │   ├── db.py            <-- (NEW) All database connection logic goes here
+│   │   └── ml_models.py     <-- (NEW) All machine learning math goes here
+│   │
+│   ├── pages/
+│   │   ├── 1_Linear_Regression.py  <-- Only the educational visualizer
+│   │   └── 5_Game_Arena.py         <-- Only the multiplayer game
+│   │
+│   └── main.py              <-- A simple welcome page
+```
+</details>
+
 
 ---
 
