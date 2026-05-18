@@ -90,7 +90,7 @@ graph LR
     F[New: Modular App] --> G[utils/db.py]
     F --> H[utils/ml_models.py]
     F --> I[pages/1_Linear_Regression.py]
-    F --> J[pages/5_Game_Arena.py]
+    F --> J[pages/5_ML_Game.py]
     
     style A fill:#f99,stroke:#333,stroke-width:2px
     style F fill:#9f9,stroke:#333,stroke-width:2px
@@ -114,7 +114,7 @@ streamlit_ml_demo/
 │   │
 │   ├── pages/
 │   │   ├── 1_Linear_Regression.py  <-- Only the educational visualizer
-│   │   └── 5_Game_Arena.py         <-- Only the multiplayer game
+│   │   └── 5_ML_Game.py         <-- Only the multiplayer game
 │   │
 │   └── main.py              <-- A simple welcome page
 ```
