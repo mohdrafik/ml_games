@@ -4,6 +4,7 @@ import time
 import random
 from sqlalchemy import text
 import os
+
 from dotenv import load_dotenv 
 
 # --- NEW: IMPORT FROM MODULAR UTILS ---
@@ -12,8 +13,8 @@ from utils.ml_models import draw_ml_plot, get_linear_regression_prediction
 
 # --- 1. CONFIGURATION & SECRETS ---
 load_dotenv()
-SECRET_GAME_PWD = os.getenv("GAME_PASSWORD", "ML10X").strip()
-SECRET_ADMIN_PWD = os.getenv("ADMIN_PWD", "gem").strip()
+SECRET_GAME_PWD = os.getenv("GAME_PASSWORD").strip()
+SECRET_ADMIN_PWD = os.getenv("ADMIN_PWD").strip()
 
 st.set_page_config(page_title="ML Prediction Game", layout="wide", initial_sidebar_state="collapsed")
 
@@ -76,18 +77,40 @@ check_and_transition_state()
 with engine.connect() as conn:
     state = pd.read_sql("SELECT * FROM game_state WHERE id = 1", conn).iloc[0]
 
-# --- 3. ROUTING (Teacher vs Student Link) ---
-is_student_link = st.query_params.get("join") == "true"
+## --- 3. ROUTING (Teacher vs Student Link) ---
+# --- 3. ROUTING (Role Selection) ---
+st.title("🏆 Machine Learning Prediction Arena")
+role = st.radio("Select Your Role to Enter:", ["🎓 I am a Student", "👨‍🏫 I am the Teacher (Admin)"], horizontal=True)
+st.markdown("---")
 
-if not is_student_link:
+if role == "👨‍🏫 I am the Teacher (Admin)":
     st.sidebar.title("👨‍🏫 Teacher Login")
-    teacher_pwd = st.sidebar.text_input("Admin Password", type="password")
-    if teacher_pwd.lower() != SECRET_ADMIN_PWD.lower():
-        st.info("👈 Please log in as a teacher on the sidebar, or use the Student Link to join.")
+    
+    # Initialize login state if it doesn't exist
+    if 'teacher_logged_in' not in st.session_state:
+        st.session_state['teacher_logged_in'] = False
+
+    # The Login Check
+    if not st.session_state['teacher_logged_in']:
+        teacher_pwd = st.sidebar.text_input("Admin Password", type="password")
+        if st.sidebar.button("Login"):
+            if teacher_pwd.lower() == SECRET_ADMIN_PWD.lower():
+                st.session_state['teacher_logged_in'] = True
+                st.rerun()
+            else:
+                st.sidebar.error("Incorrect Password!")
+        
+        st.info("👈 Please log in on the sidebar to access the Control Center.")
         st.stop()
         
+    # Optional: Add a logout button for security
+    if st.sidebar.button("Logout"):
+        st.session_state['teacher_logged_in'] = False
+        st.rerun()
+        
     # --- TEACHER DASHBOARD ---
-    st.title("👨‍🏫 Game Control Center")
+    st.header("👨‍🏫 Game Control Center")
+
     if state['status'] in ['joining', 'playing']:
         if st.button("🛑 Stop Game & Return to Setup", type="primary"):
             with engine.connect() as conn:
@@ -132,11 +155,14 @@ if not is_student_link:
                     conn.commit()
                 st.rerun()
 
+    # elif state['status'] == 'joining':
+    #     st.header("⏳ Waiting for Players...")
+    #     join_link = "?join=true"
+    #     st.success(f"**Share this exact link with students:** `YOUR_WEBSITE_URL/{join_link}`")
     elif state['status'] == 'joining':
         st.header("⏳ Waiting for Players...")
-        join_link = "?join=true"
-        st.success(f"**Share this exact link with students:** `YOUR_WEBSITE_URL/{join_link}`")
-        
+        st.success("**Tell students to go to the website and select 'I am a Student' to join!**")
+
         remaining = max(int(state['timer_ends_at'] - time.time()), 0)
         st.metric("Time until Game Starts", f"{remaining} sec")
         
@@ -167,8 +193,11 @@ if not is_student_link:
         st.rerun()
 
 # --- 4. STUDENT DASHBOARD ---
-else:
-    st.title("🎓 Student Portal")
+# else:
+#     st.title("🎓 Student Portal")
+# --- 4. STUDENT DASHBOARD ---
+elif role == "🎓 I am a Student":
+    st.header("🎓 Student Portal")
     
     if state['status'] == 'setup':
         st.info("The teacher has not started the game yet. Please wait.")
@@ -238,7 +267,8 @@ if state['status'] == 'finished':
         leaderboard.index = leaderboard.index + 1
         st.dataframe(leaderboard, use_container_width=True)
         
-    if not is_student_link and st.button("🔄 Reset Server for New Game"):
+    # if not is_student_link and st.button("🔄 Reset Server for New Game"):
+    if role == "👨‍🏫 I am the Teacher (Admin)" and st.button("🔄 Reset Server for New Game"):
         with engine.connect() as conn:
             conn.execute(text("UPDATE game_state SET status='setup' WHERE id=1"))
             conn.commit()
