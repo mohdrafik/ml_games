@@ -8,7 +8,7 @@ Welcome to my Machine Learning portfolio!
 
 👈 **Use the sidebar to navigate:**
 * **1_Linear_Regression:** Play with an interactive visualization of how AI draws a line of best fit.
-* **5_ML_Game:** Enter the real-time, synchronized multiplayer prediction game!
+* **5_ML_Games:** Enter the real-time, synchronized multiplayer prediction game!
 """)
 
 
