@@ -154,3 +154,9 @@ Launch the application server using the following command:
 streamlit run app/main.py
 
 ```
+
+## do it later: Scroll down to Networking and click Generate Domain. Railway will give you a free, temporary testing link (like mlgames-production.up.railway.app).
+
+- Click that link and make sure your game works and connects to the database.
+
+- Only after the game works perfectly on the free Railway link will we go to Hostinger. When you are ready for that, you will map a subdomain (like games.mohrafik.it) in Hostinger to point to that Railway link using a CNAME record.

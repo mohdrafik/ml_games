@@ -82,7 +82,6 @@ with engine.connect() as conn:
 st.title("🏆 Machine Learning Prediction Arena")
 role = st.radio("Select Your Role to Enter:", ["🎓 I am a Student", "👨‍🏫 I am the Teacher (Admin)"], horizontal=True)
 st.markdown("---")
-
 if role == "👨‍🏫 I am the Teacher (Admin)":
     st.sidebar.title("👨‍🏫 Teacher Login")
     
@@ -127,7 +126,6 @@ if role == "👨‍🏫 I am the Teacher (Admin)":
         When the game starts, the AI will pick a random Study Hour. Your goal is to guess exactly how many marks the red line predicts!"
         """)
         
-        # --- NEW: DRAWS PLOT FROM UTILS ---
         st.pyplot(draw_ml_plot())
         st.markdown("---")
 
@@ -155,48 +153,10 @@ if role == "👨‍🏫 I am the Teacher (Admin)":
                     conn.commit()
                 st.rerun()
 
-    # elif state['status'] == 'joining':
-    #     st.header("⏳ Waiting for Players...")
-    #     join_link = "?join=true"
-    #     st.success(f"**Share this exact link with students:** `YOUR_WEBSITE_URL/{join_link}`")
-
-    # elif state['status'] == 'joining':
-    #     st.header("⏳ Waiting for Players...")
-    #     st.success("**Tell students to go to the website and select 'I am a Student' to join!**")
-
-    #     remaining = max(int(state['timer_ends_at'] - time.time()), 0)
-    #     st.metric("Time until Game Starts", f"{remaining} sec")
-        
-    #     with engine.connect() as conn:
-    #         players = pd.read_sql("SELECT name, location FROM players", conn)
-    #     st.write(f"Joined: {len(players)} / {state['expected_students']}")
-    #     st.dataframe(players, use_container_width=True)
-        
-    #     time.sleep(1)
-    #     st.rerun()
-
-    # elif state['status'] == 'playing':
-    #     col1, col2 = st.columns([2, 1])
-    #     with col1:
-    #         st.header(f"🎮 Round {state['current_round']} of {state['total_rounds']}")
-    #         st.pyplot(draw_ml_plot())
-    #     with col2:
-    #         remaining = max(int(state['timer_ends_at'] - time.time()), 0)
-    #         st.metric("⏳ Time Remaining", f"{remaining} sec")
-    #         st.info(f"🎯 Target Study Hours: **{state['target_hour']}**")
-            
-    #         with engine.connect() as conn:
-    #             players = pd.read_sql("SELECT name, has_guessed FROM players", conn)
-    #         st.write(f"Guesses Locked: {len(players[players['has_guessed']==True])} / {len(players)}")
-    #         st.dataframe(players, use_container_width=True)
-            
-    #     time.sleep(1)
-    #     st.rerun()
     elif state['status'] == 'joining':
         st.header("⏳ Waiting for Players...")
         st.success("**Tell students to go to the website and select 'I am a Student' to join!**")
         
-        # --- NEW: COLUMNS FOR TIMER AND FORCE START BUTTON ---
         col1, col2 = st.columns(2)
         with col1:
             remaining = max(int(state['timer_ends_at'] - time.time()), 0)
@@ -206,11 +166,9 @@ if role == "👨‍🏫 I am the Teacher (Admin)":
             st.write("") # Spacing to align the button with the timer
             if st.button("🚀 Force Start Game Now", type="primary"):
                 with engine.connect() as conn:
-                    # Setting the timer to 1 forces the state machine to instantly start the game!
                     conn.execute(text("UPDATE game_state SET timer_ends_at=1 WHERE id=1"))
                     conn.commit()
                 st.rerun()
-        # -----------------------------------------------------
         
         with engine.connect() as conn:
             players = pd.read_sql("SELECT name, location FROM players", conn)
@@ -220,10 +178,24 @@ if role == "👨‍🏫 I am the Teacher (Admin)":
         time.sleep(1)
         st.rerun()
 
+    elif state['status'] == 'playing':
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.header(f"🎮 Round {state['current_round']} of {state['total_rounds']}")
+            st.pyplot(draw_ml_plot())
+        with col2:
+            remaining = max(int(state['timer_ends_at'] - time.time()), 0)
+            st.metric("⏳ Time Remaining", f"{remaining} sec")
+            st.info(f"🎯 Target Study Hours: **{state['target_hour']}**")
+            
+            with engine.connect() as conn:
+                players = pd.read_sql("SELECT name, has_guessed FROM players", conn)
+            st.write(f"Guesses Locked: {len(players[players['has_guessed']==True])} / {len(players)}")
+            st.dataframe(players, use_container_width=True)
+            
+        time.sleep(1)
+        st.rerun()
 
-# --- 4. STUDENT DASHBOARD ---
-# else:
-#     st.title("🎓 Student Portal")
 # --- 4. STUDENT DASHBOARD ---
 elif role == "🎓 I am a Student":
     st.header("🎓 Student Portal")
