@@ -8,9 +8,16 @@ load_dotenv()
 # Connect to Railway MySQL (falls back to local SQLite for testing)
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///game_database.db")
 
+# @st.cache_resource
+# def get_engine():
+#     return create_engine(DB_URL)
+
 @st.cache_resource
 def get_engine():
-    return create_engine(DB_URL)
+    # pool_pre_ping=True checks if the connection is dead and reconnects automatically!
+    # pool_recycle=300 forces the app to refresh the connection every 5 minutes.
+    return create_engine(DB_URL, pool_pre_ping=True, pool_recycle=300)
+
 
 engine = get_engine()
 

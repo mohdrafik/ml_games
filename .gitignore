@@ -39,3 +39,4 @@ Thumbs.db
 .env
 doc/prompts.txt
 
+*.db
